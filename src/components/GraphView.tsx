@@ -1,0 +1,64 @@
+"use client";
+
+import React, { useRef, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+
+// Dynamically import ForceGraph2D to prevent SSR window is not defined errors
+const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
+    ssr: false,
+    loading: () => <div className="graph-loading" style={{ color: 'var(--accent)', padding: '2rem' }}>Initializing Neural Link...</div>
+});
+
+interface GraphData {
+    nodes: any[];
+    links: any[];
+}
+
+export default function GraphView({ initialData }: { initialData: GraphData }) {
+    const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+    const containerRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (containerRef.current) {
+                setDimensions({
+                    width: containerRef.current.clientWidth,
+                    height: containerRef.current.clientHeight
+                });
+            }
+        };
+
+        window.addEventListener('resize', updateDimensions);
+        updateDimensions();
+
+        return () => window.removeEventListener('resize', updateDimensions);
+    }, []);
+
+    const handleNodeClick = (node: any) => {
+        if (node.id) {
+            router.push(`/lore/${node.id}`);
+        }
+    };
+
+    return (
+        <div ref={containerRef} style={{ width: '100vw', height: '100vh', background: 'var(--background)' }}>
+            {typeof window !== 'undefined' && dimensions.width > 0 && (
+                <ForceGraph2D
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    graphData={initialData}
+                    nodeLabel="name"
+                    nodeAutoColorBy="group"
+                    nodeRelSize={6}
+                    linkDirectionalParticles={2}
+                    linkDirectionalParticleSpeed={0.005}
+                    linkColor={() => 'rgba(255,255,255,0.2)'}
+                    onNodeClick={handleNodeClick}
+                    backgroundColor="#050505"
+                />
+            )}
+        </div>
+    );
+}
