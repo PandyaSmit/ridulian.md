@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FadeIn, StaggerContainer, StaggerItem } from './MotionWrapper';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Library, Feather, Book, Flame } from 'lucide-react';
 import type { ProjectDef } from '@/lib/StorageManager';
 
 export default function ProjectList({ initialProjects }: { initialProjects: ProjectDef[] }) {
@@ -77,102 +79,150 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
     };
 
     return (
-        <div className="project-dashboard">
-            <div className="dashboard-header" style={{ marginBottom: '3rem' }}>
-                <h1 style={{ fontSize: '2.5rem', margin: 0, textTransform: 'uppercase', letterSpacing: '2px' }}>Active Terminals</h1>
-                <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Select a universe designation to commence localized connection.</p>
+        <div className="project-dashboard" style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 0' }}>
+            <div className="dashboard-header" style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                <Library size={48} color="var(--accent)" style={{ marginBottom: '1.5rem', opacity: 0.8, display: 'inline-block' }} />
+                <h1 style={{
+                    fontSize: 'max(3rem, 4vw)',
+                    margin: 0,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.15em',
+                    fontFamily: 'var(--font-serif)',
+                    color: 'var(--accent)',
+                    borderBottom: '1px solid var(--border)',
+                    paddingBottom: '1.5rem',
+                    display: 'inline-block'
+                }}>
+                    The Grand Codex
+                </h1>
+                <p style={{ color: 'var(--text-muted)', marginTop: '2rem', fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontStyle: 'italic' }}>
+                    "Knowledge is the only wealth that cannot be plundered."
+                </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
-                <StaggerContainer className="project-grid">
-                    {/* The "Create New" Tile */}
-                    <StaggerItem>
-                        <div
-                            className="project-card create-new-card"
-                            onClick={() => setIsModalOpen(true)}
-                            style={{
-                                padding: '2rem',
-                                background: 'transparent',
-                                border: '1px dashed var(--accent)',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                minHeight: '160px',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease'
-                            }}
-                        >
-                            <span style={{ fontSize: '2rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>+</span>
-                            <span style={{ color: 'var(--accent)', letterSpacing: '1px', fontSize: '0.9rem', fontWeight: 'bold' }}>[ INITIATE NEW PROJECT ]</span>
-                        </div>
-                    </StaggerItem>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4rem' }}>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.8rem',
+                        background: 'transparent',
+                        border: '1px solid var(--accent)',
+                        color: 'var(--accent)',
+                        padding: '1rem 2rem',
+                        fontSize: '1.1rem',
+                        fontFamily: 'var(--font-serif)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: 'inset 0 0 0 rgba(182, 155, 116, 0)',
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = 'inset 0 0 20px rgba(182, 155, 116, 0.2)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = 'inset 0 0 0 rgba(182, 155, 116, 0)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                >
+                    <Feather size={20} />
+                    Inscribe New Tome
+                </button>
+            </div>
 
-                    {/* Existing Project Tiles */}
-                    {activeProjects.map((proj) => (
-                        <StaggerItem key={proj.id}>
-                            <div style={{ position: 'relative' }}>
-                                <Link href={`/editor/${proj.id}`} style={{ textDecoration: 'none' }}>
-                                    <div className="project-card existing-card" style={{
-                                        padding: '2rem',
-                                        background: 'rgba(0, 255, 204, 0.02)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: '8px',
-                                        transition: 'all 0.3s ease',
-                                        cursor: 'pointer',
-                                        minHeight: '160px',
-                                        position: 'relative',
-                                        overflow: 'hidden'
-                                    }}>
-                                        {/* Subtle scanline overlay specific to the card */}
-                                        <div className="card-scanline-overlay"></div>
-
-                                        <h3 style={{ margin: '0 0 1rem 0', color: 'var(--foreground)', fontSize: '1.4rem' }}>{proj.name}</h3>
-
-                                        <div style={{ marginTop: 'auto' }}>
-                                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                ACCESS ID: <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{proj.id.split('-')[0]}</span>
-                                            </p>
-                                            {proj.updatedAt && (
-                                                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                    LAST SYNC: {new Date(proj.updatedAt).toLocaleDateString()}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </Link>
-
-                                {/* Archive Button overlay */}
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setProjectToArchive(proj);
-                                    }}
-                                    className="archive-btn"
+            <div className="tome-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <StaggerContainer>
+                    <AnimatePresence>
+                        {activeProjects.map((proj) => (
+                            <StaggerItem key={proj.id}>
+                                <motion.div
+                                    exit={{ opacity: 0, x: -20, transition: { duration: 0.4, ease: 'easeInOut' } }}
                                     style={{
-                                        position: 'absolute',
-                                        top: '1rem',
-                                        right: '1rem',
-                                        background: 'rgba(255, 51, 102, 0.1)',
-                                        border: '1px solid rgba(255, 51, 102, 0.3)',
-                                        color: '#ff3366',
-                                        cursor: 'pointer',
-                                        padding: '0.2rem 0.6rem',
-                                        borderRadius: '4px',
-                                        fontSize: '0.7rem',
-                                        fontFamily: 'monospace',
-                                        zIndex: 10,
-                                        opacity: 0.6,
-                                        transition: 'all 0.2s ease'
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '2rem 3rem',
+                                        background: 'rgba(22, 20, 18, 0.6)',
+                                        borderTop: '1px solid var(--border)',
+                                        borderBottom: '1px solid var(--border)',
+                                        transition: 'all 0.3s ease',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = 'rgba(22, 20, 18, 0.9)';
+                                        e.currentTarget.style.borderColor = 'var(--interactive)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'rgba(22, 20, 18, 0.6)';
+                                        e.currentTarget.style.borderColor = 'var(--border)';
                                     }}
                                 >
-                                    [ ARCHIVE ]
-                                </button>
-                            </div>
-                        </StaggerItem>
-                    ))}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                        <Book size={36} color="var(--accent)" style={{ opacity: 0.7 }} />
+                                        <div>
+                                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--foreground)', fontSize: '1.8rem', fontFamily: 'var(--font-serif)', letterSpacing: '0.05em' }}>
+                                                {proj.name}
+                                            </h3>
+                                            <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                                                SIGIL: <span style={{ color: 'var(--accent)' }}>{proj.id.split('-')[0]}</span>
+                                                <span style={{ margin: '0 1rem', opacity: 0.5 }}>✧</span>
+                                                LAST SYNC: {new Date(proj.updatedAt || proj.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                        <Link
+                                            href={`/editor/${proj.id}`}
+                                            style={{
+                                                textDecoration: 'none',
+                                                color: 'var(--interactive)',
+                                                fontFamily: 'var(--font-serif)',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.1em',
+                                                fontSize: '1rem',
+                                                borderBottom: '1px solid transparent',
+                                                transition: 'all 0.2s ease',
+                                                paddingBottom: '2px'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.borderBottom = '1px solid var(--interactive)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.borderBottom = '1px solid transparent'}
+                                        >
+                                            Unfurl Scroll
+                                        </Link>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setProjectToArchive(proj);
+                                            }}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--danger)',
+                                                cursor: 'pointer',
+                                                fontFamily: 'var(--font-serif)',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.1em',
+                                                fontSize: '0.9rem',
+                                                opacity: 0.7,
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+                                        >
+                                            <Flame size={16} /> Seal
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </StaggerItem>
+                        ))}
+                    </AnimatePresence>
                 </StaggerContainer>
             </div>
 
@@ -192,9 +242,9 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
                             width: '400px',
                             boxShadow: '0 0 40px rgba(0, 255, 204, 0.1)'
                         }}>
-                            <h2 style={{ marginTop: 0, marginBottom: '2rem', color: 'var(--accent)' }}>SYSTEM PARAMETERS</h2>
+                            <h2 style={{ marginTop: 0, marginBottom: '2rem', color: 'var(--accent)', fontFamily: 'var(--font-serif)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tome Inscription</h2>
                             <div style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>DESIGNATION (PROJECT NAME)</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem', fontFamily: 'var(--font-serif)', textTransform: 'uppercase' }}>Tome Designation (Title)</label>
                                 <input
                                     autoFocus
                                     type="text"
@@ -203,17 +253,18 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
                                     disabled={isCreating}
                                     style={{
                                         width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.5)',
-                                        border: '1px solid var(--border)', color: 'white', fontFamily: 'monospace',
-                                        outline: 'none'
+                                        border: '1px solid var(--border)', color: 'white', fontFamily: 'var(--font-mono)',
+                                        outline: 'none',
+                                        fontSize: '1.1rem'
                                     }}
                                     placeholder="e.g. The Sprawl"
                                     required
                                 />
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-auth btn-logout" disabled={isCreating}>[ ABORT ]</button>
-                                <button type="submit" className="btn-auth btn-login" disabled={isCreating}>
-                                    {isCreating ? '[ EXECUTING... ]' : '[ CONFIRM ]'}
+                            <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'flex-end' }}>
+                                <button type="button" onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-serif)', textTransform: 'uppercase', letterSpacing: '0.05em' }} disabled={isCreating}>Abort</button>
+                                <button type="submit" style={{ background: 'var(--accent)', color: 'var(--background)', border: 'none', padding: '0.5rem 1.5rem', cursor: 'pointer', fontFamily: 'var(--font-serif)', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em' }} disabled={isCreating}>
+                                    {isCreating ? 'Inscribing...' : 'Inscribe'}
                                 </button>
                             </div>
                         </form>
@@ -238,27 +289,26 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
                             boxShadow: '0 0 40px rgba(255, 51, 102, 0.15)',
                             textAlign: 'center'
                         }}>
-                            <h2 style={{ marginTop: 0, marginBottom: '1rem', color: '#ff3366', letterSpacing: '2px' }}>WARNING: SEVER CONNECTION</h2>
+                            <h2 style={{ marginTop: 0, marginBottom: '1rem', color: 'var(--danger)', letterSpacing: '0.1em', fontFamily: 'var(--font-serif)' }}>WARNING: SEAL ARCHIVE</h2>
 
-                            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: '1.6' }}>
-                                Archiving <strong style={{ color: 'white' }}>{projectToArchive.name}</strong> will remove it from your active terminal grid. No data will be physically destroyed, but the uplink will be hidden.
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: '1.6', fontSize: '1.1rem' }}>
+                                Sealing <strong style={{ color: 'var(--foreground)' }}>{projectToArchive.name}</strong> will remove it from your active codex. No inscriptions will be physically destroyed, but the tome will be obscured from view.
                             </p>
 
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
                                 <button
                                     onClick={() => setProjectToArchive(null)}
-                                    className="btn-auth"
-                                    style={{ borderColor: 'var(--border)' }}
+                                    style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '0.5rem 1.5rem', cursor: 'pointer', fontFamily: 'var(--font-serif)', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                                     disabled={isArchiving}
                                 >
-                                    [ CANCEL ]
+                                    Cancel
                                 </button>
                                 <button
                                     onClick={handleArchiveProject}
-                                    className="btn-auth btn-logout"
+                                    style={{ background: 'var(--danger)', border: 'none', color: 'white', padding: '0.5rem 1.5rem', cursor: 'pointer', fontFamily: 'var(--font-serif)', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em' }}
                                     disabled={isArchiving}
                                 >
-                                    {isArchiving ? '[ SEVERING... ]' : '[ SEVER CONNECTION ]'}
+                                    {isArchiving ? 'Sealing...' : 'Seal Archive'}
                                 </button>
                             </div>
                         </div>

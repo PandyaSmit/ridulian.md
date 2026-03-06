@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function TopNav() {
     const { data: session } = useSession();
@@ -10,7 +11,12 @@ export default function TopNav() {
     const projectId = params?.projectId as string | undefined;
 
     return (
-        <nav className="top-nav">
+        <motion.nav
+            className="top-nav"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+        >
             <Link href="/" className="nav-brand">
                 ridulian.md
             </Link>
@@ -29,7 +35,7 @@ export default function TopNav() {
                 {session ? (
                     <>
                         <Link href="/dashboard" className="nav-link">
-                            Terminals
+                            Codex
                         </Link>
                         <div className="auth-profile">
                             <img
@@ -42,7 +48,7 @@ export default function TopNav() {
                                 onClick={() => signOut()}
                                 className="btn-auth btn-logout"
                             >
-                                [ SEVER CONNECTION ]
+                                [ DEPART ARCHIVE ]
                             </button>
                         </div>
                     </>
@@ -51,10 +57,10 @@ export default function TopNav() {
                         onClick={() => signIn("github")}
                         className="btn-auth btn-login"
                     >
-                        [ INITIATE HANDSHAKE: GITHUB ]
+                        [ PRESENT CREDENTIALS: GITHUB ]
                     </button>
                 )}
             </div>
-        </nav>
+        </motion.nav>
     );
 }

@@ -26,27 +26,27 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
     // Setup Custom Monaco Theme
     useEffect(() => {
         if (monaco) {
-            monaco.editor.defineTheme('ctos-dark', {
+            monaco.editor.defineTheme('imperial-dark', {
                 base: 'vs-dark',
                 inherit: true,
                 rules: [
-                    { token: '', background: '000000' },
-                    { token: 'keyword', foreground: '00E5FF' },
-                    { token: 'string', foreground: 'a1a1aa' },
-                    { token: 'number', foreground: '00E5FF' },
-                    { token: 'comment', foreground: '3f3f46', fontStyle: 'italic' }
+                    { token: '', background: '161412' },
+                    { token: 'keyword', foreground: 'B69B74' },
+                    { token: 'string', foreground: 'B3A895' },
+                    { token: 'number', foreground: '4B90E2' },
+                    { token: 'comment', foreground: '5A5043', fontStyle: 'italic' }
                 ],
                 colors: {
-                    'editor.background': '#000000',
-                    'editor.foreground': '#d4d4d8',
-                    'editorCursor.foreground': '#00E5FF',
-                    'editor.lineHighlightBackground': '#09090b',
-                    'editorLineNumber.foreground': '#27272a',
-                    'editor.selectionBackground': 'rgba(0, 229, 255, 0.2)',
-                    'editor.inactiveSelectionBackground': 'rgba(0, 229, 255, 0.1)'
+                    'editor.background': '#161412',
+                    'editor.foreground': '#E8DCC2',
+                    'editorCursor.foreground': '#B69B74',
+                    'editor.lineHighlightBackground': '#1A1715',
+                    'editorLineNumber.foreground': '#4A4136',
+                    'editor.selectionBackground': 'rgba(182, 155, 116, 0.2)',
+                    'editor.inactiveSelectionBackground': 'rgba(182, 155, 116, 0.1)'
                 }
             });
-            monaco.editor.setTheme('ctos-dark');
+            monaco.editor.setTheme('imperial-dark');
         }
     }, [monaco]);
 
@@ -200,7 +200,7 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                                                 padding: '0.4rem',
                                                 width: '100%',
                                                 borderRadius: '4px',
-                                                backgroundColor: isActive ? 'rgba(0, 255, 204, 0.05)' : 'transparent',
+                                                backgroundColor: isActive ? 'rgba(182, 155, 116, 0.05)' : 'transparent',
                                                 transition: 'all 0.2s ease',
                                                 borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent'
                                             }}
@@ -216,7 +216,7 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
             </aside>
 
             {/* Main Editor Area */}
-            <main style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0a0a0a', position: 'relative' }}>
+            <main style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--background)', position: 'relative' }}>
                 {activeFile ? (
                     <>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)', background: 'var(--background)' }}>
@@ -229,10 +229,10 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving || isLoadingNode}
-                                className="btn-auth btn-login"
-                                style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
+                                className="btn-auth"
+                                style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', color: 'var(--interactive)', borderColor: 'var(--interactive)' }}
                             >
-                                {isSaving ? '[ ENCODING... ]' : '[ ENCODE DATA ]'}
+                                {isSaving ? '[ SCRIBING... ]' : '[ SCRIBE LORE ]'}
                             </button>
                         </div>
 
@@ -242,7 +242,7 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                                 <Editor
                                     height="100%"
                                     defaultLanguage="markdown"
-                                    theme="ctos-dark"
+                                    theme="imperial-dark"
                                     value={content}
                                     onChange={(val) => setContent(val || '')}
                                     options={{
@@ -278,8 +278,8 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                 ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
                         <div style={{ textAlign: 'center' }}>
-                            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>Terminal Online</h2>
-                            <p style={{ fontFamily: 'monospace' }}>Select or create a document to begin data entry.</p>
+                            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-serif)', color: 'var(--accent)' }}>Archive Open</h2>
+                            <p style={{ fontFamily: 'var(--font-mono)' }}>Select or create a parchment to begin data entry.</p>
                         </div>
                     </div>
                 )}
@@ -297,11 +297,11 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                             background: 'var(--background)',
                             padding: '3rem',
                             border: '1px solid var(--accent)',
-                            borderRadius: '8px',
+                            borderRadius: '2px',
                             width: '400px',
-                            boxShadow: '0 0 40px rgba(0, 255, 204, 0.1)'
+                            boxShadow: 'inset 0 0 20px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0,0,0,0.5)'
                         }}>
-                            <h2 style={{ marginTop: 0, marginBottom: '2rem', color: 'var(--accent)' }}>INITIALIZE NEW RECORD</h2>
+                            <h2 style={{ marginTop: 0, marginBottom: '2rem', color: 'var(--accent)', fontFamily: 'var(--font-serif)' }}>INITIALIZE NEW SCROLL</h2>
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>ROOT FOLDER</label>
@@ -321,7 +321,7 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                             </div>
 
                             <div style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>DOCUMENT DESIGNATION</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>SCROLL DESIGNATION</label>
                                 <input
                                     autoFocus
                                     type="text"
@@ -329,7 +329,7 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                                     onChange={(e) => setNewFileName(e.target.value)}
                                     style={{
                                         width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.5)',
-                                        border: '1px solid var(--border)', color: 'white', fontFamily: 'monospace',
+                                        border: '1px solid var(--border)', color: 'var(--foreground)', fontFamily: 'var(--font-mono)',
                                         outline: 'none'
                                     }}
                                     placeholder="e.g. Neo-Tokyo Protocol"
@@ -339,7 +339,7 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
 
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                                 <button type="button" onClick={() => setShowNewFileModal(false)} className="btn-auth btn-logout">[ ABORT ]</button>
-                                <button type="submit" className="btn-auth btn-login">[ CONFIRM ]</button>
+                                <button type="submit" className="btn-auth" style={{ borderColor: 'var(--interactive)', color: 'var(--interactive)' }}>[ ENGRAVE ]</button>
                             </div>
                         </form>
                     </FadeIn>
