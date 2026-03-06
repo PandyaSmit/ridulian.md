@@ -150,6 +150,76 @@ p {
   color: #ffffff;
 }
 
+/* Auth Styles */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.auth-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.auth-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.auth-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  filter: grayscale(100%) contrast(1.2);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.auth-avatar:hover {
+  filter: grayscale(0%) contrast(1);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.btn-auth {
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.btn-login {
+  color: #00ffcc;
+  border-color: rgba(0, 255, 204, 0.3);
+  text-shadow: 0 0 8px rgba(0, 255, 204, 0.5);
+}
+
+.btn-login:hover {
+  background: rgba(0, 255, 204, 0.1);
+  box-shadow: 0 0 15px rgba(0, 255, 204, 0.3) inset;
+  transform: translateY(-1px);
+}
+
+.btn-logout {
+  color: #ff3366;
+  border-color: rgba(255, 51, 102, 0.3);
+}
+
+.btn-logout:hover {
+  background: rgba(255, 51, 102, 0.1);
+  box-shadow: 0 0 15px rgba(255, 51, 102, 0.3) inset;
+}
+
 /* Lore Article Styles */
 .lore-article {
   max-width: 800px;

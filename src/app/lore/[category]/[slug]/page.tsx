@@ -3,14 +3,25 @@ import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import Timeline from '@/components/Timeline';
 import Link from 'next/link';
+import TopNav from '@/components/TopNav';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { FadeIn } from '@/components/MotionWrapper';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { STORAGE_MODE } from '@/lib/StorageManager';
 
 export async function generateStaticParams() {
+    // If we are in CLOUD mode, paths depend on the specific user's bucket prefix.
+    // Static generation at build time without a user session is impossible.
+    // Return an empty array to force dynamic Server-Side Rendering (SSR) for all lore pages.
+    if (STORAGE_MODE === 'CLOUD') {
+        return [];
+    }
+
+    // For LOCAL mode, we can pre-generate paths
     const categories = await getAllCategories();
     const paths: { category: string; slug: string }[] = [];
 
-    // Resolve all entries concurrently based on categories
     await Promise.all(categories.map(async (category) => {
         const entries = await getAllEntries(category);
         entries.forEach(entry => {
@@ -29,7 +40,9 @@ export async function generateMetadata(
     parent: ResolvingMetadata
 ): Promise<Metadata> {
     const { category, slug } = await params;
-    const entry = await getEntryBySlug(category, slug);
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    const entry = await getEntryBySlug(category, slug, userId);
 
     if (!entry) {
         return {
@@ -46,7 +59,10 @@ export async function generateMetadata(
 
 export default async function LorePage({ params }: { params: Promise<{ category: string; slug: string }> }) {
     const { category, slug } = await params;
-    const entry = await getEntryBySlug(category, slug);
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
+    const entry = await getEntryBySlug(category, slug, userId);
 
     if (!entry) {
         notFound();
@@ -56,12 +72,7 @@ export default async function LorePage({ params }: { params: Promise<{ category:
 
     return (
         <div className="app-container">
-            <nav className="top-nav">
-                <Link href="/" className="nav-brand">ridulian.md</Link>
-                <div className="nav-links">
-                    <Link href="/graph">Universe Graph</Link>
-                </div>
-            </nav>
+            <TopNav />
 
             <main className="main-content lore-article">
                 <FadeIn className="article-header">

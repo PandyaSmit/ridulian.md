@@ -1,15 +1,11 @@
 import Link from 'next/link';
 import { StaggerContainer, StaggerItem, FadeIn } from '@/components/MotionWrapper';
+import TopNav from '@/components/TopNav';
 
 export default function Home() {
   return (
     <div className="app-container">
-      <nav className="top-nav">
-        <Link href="/" className="nav-brand">ridulian.md</Link>
-        <div className="nav-links">
-          <Link href="/graph">Universe Graph</Link>
-        </div>
-      </nav>
+      <TopNav />
       <main className="main-content">
         <StaggerContainer className="hero-section">
           <StaggerItem>

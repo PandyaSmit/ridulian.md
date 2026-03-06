@@ -1,18 +1,19 @@
 import { getGraphData } from '@/lib/markdown';
 import GraphView from '@/components/GraphView';
-import Link from 'next/link';
+import TopNav from '@/components/TopNav';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 export default async function GraphPage() {
-    const data = await getGraphData();
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    const data = await getGraphData(userId);
 
     return (
         <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-            <nav className="top-nav" style={{ position: 'absolute', top: 0, left: 0, width: '100%', background: 'transparent', borderBottom: 'none', zIndex: 100 }}>
-                <Link href="/" className="nav-brand">ridulian.md</Link>
-                <div className="nav-links">
-                    <Link href="/">Back to Home</Link>
-                </div>
-            </nav>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 100 }}>
+                <TopNav />
+            </div>
             <GraphView initialData={data} />
         </div>
     );
