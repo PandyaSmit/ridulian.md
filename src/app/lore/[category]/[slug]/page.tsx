@@ -7,18 +7,19 @@ import type { Metadata, ResolvingMetadata } from 'next';
 import { FadeIn } from '@/components/MotionWrapper';
 
 export async function generateStaticParams() {
-    const categories = getAllCategories();
+    const categories = await getAllCategories();
     const paths: { category: string; slug: string }[] = [];
 
-    categories.forEach(category => {
-        const entries = getAllEntries(category);
+    // Resolve all entries concurrently based on categories
+    await Promise.all(categories.map(async (category) => {
+        const entries = await getAllEntries(category);
         entries.forEach(entry => {
             paths.push({
                 category,
                 slug: entry.slug,
             });
         });
-    });
+    }));
 
     return paths;
 }
@@ -28,7 +29,7 @@ export async function generateMetadata(
     parent: ResolvingMetadata
 ): Promise<Metadata> {
     const { category, slug } = await params;
-    const entry = getEntryBySlug(category, slug);
+    const entry = await getEntryBySlug(category, slug);
 
     if (!entry) {
         return {
@@ -45,7 +46,7 @@ export async function generateMetadata(
 
 export default async function LorePage({ params }: { params: Promise<{ category: string; slug: string }> }) {
     const { category, slug } = await params;
-    const entry = getEntryBySlug(category, slug);
+    const entry = await getEntryBySlug(category, slug);
 
     if (!entry) {
         notFound();

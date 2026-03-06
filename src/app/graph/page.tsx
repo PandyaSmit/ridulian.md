@@ -2,8 +2,8 @@ import { getGraphData } from '@/lib/markdown';
 import GraphView from '@/components/GraphView';
 import Link from 'next/link';
 
-export default function GraphPage() {
-    const data = getGraphData();
+export default async function GraphPage() {
+    const data = await getGraphData();
 
     return (
         <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
