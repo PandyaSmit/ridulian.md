@@ -18,6 +18,7 @@ export interface ProjectDef {
     id: string;
     name: string;
     createdAt: string;
+    updatedAt: string;
 }
 
 export class StorageManager {
@@ -75,10 +76,12 @@ export class StorageManager {
      */
     static async createProject(projectName: string, userId?: string): Promise<string> {
         const projectId = crypto.randomUUID();
+        const now = new Date().toISOString();
         const newProject: ProjectDef = {
             id: projectId,
             name: projectName,
-            createdAt: new Date().toISOString()
+            createdAt: now,
+            updatedAt: now
         };
 
         const currentProjects = await this.getUserProjects(userId);
@@ -108,6 +111,34 @@ export class StorageManager {
         }
 
         return projectId;
+    }
+
+    /**
+     * Updates the `updatedAt` timestamp for a given project. 
+     * Useful to call automatically whenever a document is saved.
+     */
+    static async updateProjectTimestamp(projectId: string, userId?: string): Promise<void> {
+        const currentProjects = await this.getUserProjects(userId);
+        const projIndex = currentProjects.findIndex(p => p.id === projectId);
+        if (projIndex === -1) return;
+
+        currentProjects[projIndex].updatedAt = new Date().toISOString();
+        const updatedContent = JSON.stringify(currentProjects, null, 2);
+
+        if (STORAGE_MODE === 'CLOUD') {
+            if (!userId) throw new Error("userId is required for CLOUD storage mode");
+            const key = `users/${userId}/projects.json`;
+            const command = new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: key,
+                Body: updatedContent,
+                ContentType: 'application/json'
+            });
+            await s3Client.send(command);
+        } else {
+            const p = path.join(process.cwd(), 'projects.json');
+            await fs.promises.writeFile(p, updatedContent, 'utf8');
+        }
     }
 
     // ==========================================
@@ -238,6 +269,7 @@ export class StorageManager {
 
             try {
                 await s3Client.send(command);
+                await this.updateProjectTimestamp(projectId, userId);
             } catch (error) {
                 console.error(`Error saving document ${key} to S3:`, error);
                 throw error;
@@ -251,6 +283,7 @@ export class StorageManager {
 
             const fullPath = path.join(categoryPath, `${docId}.${extension}`);
             await fs.promises.writeFile(fullPath, content, 'utf8');
+            await this.updateProjectTimestamp(projectId, userId);
         }
     }
 }

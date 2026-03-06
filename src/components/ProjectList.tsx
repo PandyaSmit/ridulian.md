@@ -30,7 +30,8 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
             const newProj = await res.json();
 
             // Update local state and route to the new editor
-            setProjects([...projects, { id: newProj.projectId, name: newProj.name, createdAt: new Date().toISOString() }]);
+            const now = new Date().toISOString();
+            setProjects([...projects, { id: newProj.projectId, name: newProj.name, createdAt: now, updatedAt: now }]);
             setIsModalOpen(false);
             setNewProjectName('');
 
@@ -45,49 +46,73 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
 
     return (
         <div className="project-dashboard">
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-                <h1 style={{ fontSize: '2.5rem', margin: 0 }}>Terminals</h1>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="btn-auth btn-login"
-                    style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}
-                >
-                    [ INITIATE NEW PROJECT ]
-                </button>
+            <div className="dashboard-header" style={{ marginBottom: '3rem' }}>
+                <h1 style={{ fontSize: '2.5rem', margin: 0, textTransform: 'uppercase', letterSpacing: '2px' }}>Active Terminals</h1>
+                <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Select a universe designation to commence localized connection.</p>
             </div>
 
-            {projects.length === 0 ? (
-                <FadeIn delay={0.2}>
-                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '4rem', border: '1px dashed var(--border)', borderRadius: '8px' }}>
-                        <h2>NO ACTIVE TERMINALS FOUND</h2>
-                        <p>Initiate a new project sequence to begin writing lore.</p>
-                    </div>
-                </FadeIn>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
-                    <StaggerContainer className="project-grid">
-                        {projects.map((proj) => (
-                            <StaggerItem key={proj.id}>
-                                <Link href={`/editor/${proj.id}`} style={{ textDecoration: 'none' }}>
-                                    <div className="project-card" style={{
-                                        padding: '2rem',
-                                        background: 'rgba(255,255,255,0.02)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: '8px',
-                                        transition: 'all 0.3s ease',
-                                        cursor: 'pointer'
-                                    }}>
-                                        <h3 style={{ margin: '0 0 1rem 0', color: 'var(--foreground)' }}>{proj.name}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
+                <StaggerContainer className="project-grid">
+                    {/* The "Create New" Tile */}
+                    <StaggerItem>
+                        <div
+                            className="project-card create-new-card"
+                            onClick={() => setIsModalOpen(true)}
+                            style={{
+                                padding: '2rem',
+                                background: 'transparent',
+                                border: '1px dashed var(--accent)',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: '160px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease'
+                            }}
+                        >
+                            <span style={{ fontSize: '2rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>+</span>
+                            <span style={{ color: 'var(--accent)', letterSpacing: '1px', fontSize: '0.9rem', fontWeight: 'bold' }}>[ INITIATE NEW PROJECT ]</span>
+                        </div>
+                    </StaggerItem>
+
+                    {/* Existing Project Tiles */}
+                    {projects.map((proj) => (
+                        <StaggerItem key={proj.id}>
+                            <Link href={`/editor/${proj.id}`} style={{ textDecoration: 'none' }}>
+                                <div className="project-card existing-card" style={{
+                                    padding: '2rem',
+                                    background: 'rgba(0, 255, 204, 0.02)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '8px',
+                                    transition: 'all 0.3s ease',
+                                    cursor: 'pointer',
+                                    minHeight: '160px',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}>
+                                    {/* Subtle scanline overlay specific to the card */}
+                                    <div className="card-scanline-overlay"></div>
+
+                                    <h3 style={{ margin: '0 0 1rem 0', color: 'var(--foreground)', fontSize: '1.4rem' }}>{proj.name}</h3>
+
+                                    <div style={{ marginTop: 'auto' }}>
                                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                             ACCESS ID: <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{proj.id.split('-')[0]}</span>
                                         </p>
+                                        {proj.updatedAt && (
+                                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                LAST SYNC: {new Date(proj.updatedAt).toLocaleDateString()}
+                                            </p>
+                                        )}
                                     </div>
-                                </Link>
-                            </StaggerItem>
-                        ))}
-                    </StaggerContainer>
-                </div>
-            )}
+                                </div>
+                            </Link>
+                        </StaggerItem>
+                    ))}
+                </StaggerContainer>
+            </div>
 
             {/* Basic Cyberpunk Modal */}
             {isModalOpen && (

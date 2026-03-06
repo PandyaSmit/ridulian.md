@@ -384,3 +384,55 @@ p {
 .timeline-content {
   color: var(--text-muted);
 }
+
+/* ========================================= */
+/* PROJECT DASHBOARD & TERMINAL NODES        */
+/* ========================================= */
+
+.project-grid {
+  width: 100%;
+}
+
+.project-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.create-new-card {
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.05);
+}
+
+.create-new-card:hover {
+  background: rgba(0, 255, 204, 0.05) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2), inset 0 0 10px rgba(0, 255, 204, 0.1);
+  transform: translateY(-2px);
+  border-color: #00ffcc !important;
+}
+
+.existing-card {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.existing-card:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 25px var(--accent-glow), inset 0 0 10px rgba(59, 130, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+.card-scanline-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.1) 51%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+.existing-card>* {
+  position: relative;
+  z-index: 2;
+}

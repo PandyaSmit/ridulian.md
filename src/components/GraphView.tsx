@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 // Dynamically import ForceGraph2D to prevent SSR window is not defined errors
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
@@ -19,6 +19,9 @@ export default function GraphView({ initialData }: { initialData: GraphData }) {
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
     const containerRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+
+    const params = useParams();
+    const projectId = params?.projectId as string | undefined;
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -37,8 +40,8 @@ export default function GraphView({ initialData }: { initialData: GraphData }) {
     }, []);
 
     const handleNodeClick = (node: any) => {
-        if (node.id) {
-            router.push(`/lore/${node.id}`);
+        if (node.id && projectId) {
+            router.push(`/editor/${projectId}/lore/${node.id}`);
         }
     };
 
