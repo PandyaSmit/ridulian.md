@@ -4,10 +4,13 @@ import TopNav from '@/components/TopNav';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-export default async function GraphPage() {
+type PageProps = { params: Promise<{ projectId: string }> };
+
+export default async function GraphPage({ params }: PageProps) {
+    const { projectId } = await params;
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id;
-    const data = await getGraphData(userId);
+    const data = await getGraphData(projectId, userId);
 
     return (
         <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
