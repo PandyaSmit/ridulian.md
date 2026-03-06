@@ -11,7 +11,15 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
+
+    // Archive State
+    const [projectToArchive, setProjectToArchive] = useState<ProjectDef | null>(null);
+    const [isArchiving, setIsArchiving] = useState(false);
+
     const router = useRouter();
+
+    // Filter to only show active projects
+    const activeProjects = projects.filter(p => !p.status || p.status === 'active');
 
     const handleCreateProject = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,8 +47,32 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
             router.push(`/editor/${newProj.projectId}`);
         } catch (error) {
             console.error(error);
-        } finally {
             setIsCreating(false);
+        }
+    };
+
+    const handleArchiveProject = async () => {
+        if (!projectToArchive) return;
+        setIsArchiving(true);
+        try {
+            const res = await fetch('/api/projects/archive', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId: projectToArchive.id })
+            });
+
+            if (!res.ok) throw new Error('Failed to archive project');
+
+            // Optimistic deletion
+            setProjects(projects.map(p =>
+                p.id === projectToArchive.id ? { ...p, status: 'deleted' } : p
+            ));
+
+            setProjectToArchive(null);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsArchiving(false);
         }
     };
 
@@ -78,37 +110,67 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
                     </StaggerItem>
 
                     {/* Existing Project Tiles */}
-                    {projects.map((proj) => (
+                    {activeProjects.map((proj) => (
                         <StaggerItem key={proj.id}>
-                            <Link href={`/editor/${proj.id}`} style={{ textDecoration: 'none' }}>
-                                <div className="project-card existing-card" style={{
-                                    padding: '2rem',
-                                    background: 'rgba(0, 255, 204, 0.02)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '8px',
-                                    transition: 'all 0.3s ease',
-                                    cursor: 'pointer',
-                                    minHeight: '160px',
-                                    position: 'relative',
-                                    overflow: 'hidden'
-                                }}>
-                                    {/* Subtle scanline overlay specific to the card */}
-                                    <div className="card-scanline-overlay"></div>
+                            <div style={{ position: 'relative' }}>
+                                <Link href={`/editor/${proj.id}`} style={{ textDecoration: 'none' }}>
+                                    <div className="project-card existing-card" style={{
+                                        padding: '2rem',
+                                        background: 'rgba(0, 255, 204, 0.02)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '8px',
+                                        transition: 'all 0.3s ease',
+                                        cursor: 'pointer',
+                                        minHeight: '160px',
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {/* Subtle scanline overlay specific to the card */}
+                                        <div className="card-scanline-overlay"></div>
 
-                                    <h3 style={{ margin: '0 0 1rem 0', color: 'var(--foreground)', fontSize: '1.4rem' }}>{proj.name}</h3>
+                                        <h3 style={{ margin: '0 0 1rem 0', color: 'var(--foreground)', fontSize: '1.4rem' }}>{proj.name}</h3>
 
-                                    <div style={{ marginTop: 'auto' }}>
-                                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                            ACCESS ID: <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{proj.id.split('-')[0]}</span>
-                                        </p>
-                                        {proj.updatedAt && (
-                                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                LAST SYNC: {new Date(proj.updatedAt).toLocaleDateString()}
+                                        <div style={{ marginTop: 'auto' }}>
+                                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                ACCESS ID: <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{proj.id.split('-')[0]}</span>
                                             </p>
-                                        )}
+                                            {proj.updatedAt && (
+                                                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                    LAST SYNC: {new Date(proj.updatedAt).toLocaleDateString()}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </Link>
+                                </Link>
+
+                                {/* Archive Button overlay */}
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setProjectToArchive(proj);
+                                    }}
+                                    className="archive-btn"
+                                    style={{
+                                        position: 'absolute',
+                                        top: '1rem',
+                                        right: '1rem',
+                                        background: 'rgba(255, 51, 102, 0.1)',
+                                        border: '1px solid rgba(255, 51, 102, 0.3)',
+                                        color: '#ff3366',
+                                        cursor: 'pointer',
+                                        padding: '0.2rem 0.6rem',
+                                        borderRadius: '4px',
+                                        fontSize: '0.7rem',
+                                        fontFamily: 'monospace',
+                                        zIndex: 10,
+                                        opacity: 0.6,
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    [ ARCHIVE ]
+                                </button>
+                            </div>
                         </StaggerItem>
                     ))}
                 </StaggerContainer>
@@ -155,6 +217,51 @@ export default function ProjectList({ initialProjects }: { initialProjects: Proj
                                 </button>
                             </div>
                         </form>
+                    </FadeIn>
+                </div>
+            )}
+
+            {/* Archive Confirmation Modal */}
+            {projectToArchive && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <FadeIn>
+                        <div style={{
+                            background: '#0a0a0a',
+                            padding: '3rem',
+                            border: '1px solid #ff3366',
+                            borderRadius: '8px',
+                            width: '450px',
+                            boxShadow: '0 0 40px rgba(255, 51, 102, 0.15)',
+                            textAlign: 'center'
+                        }}>
+                            <h2 style={{ marginTop: 0, marginBottom: '1rem', color: '#ff3366', letterSpacing: '2px' }}>WARNING: SEVER CONNECTION</h2>
+
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: '1.6' }}>
+                                Archiving <strong style={{ color: 'white' }}>{projectToArchive.name}</strong> will remove it from your active terminal grid. No data will be physically destroyed, but the uplink will be hidden.
+                            </p>
+
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                                <button
+                                    onClick={() => setProjectToArchive(null)}
+                                    className="btn-auth"
+                                    style={{ borderColor: 'var(--border)' }}
+                                    disabled={isArchiving}
+                                >
+                                    [ CANCEL ]
+                                </button>
+                                <button
+                                    onClick={handleArchiveProject}
+                                    className="btn-auth btn-logout"
+                                    disabled={isArchiving}
+                                >
+                                    {isArchiving ? '[ SEVERING... ]' : '[ SEVER CONNECTION ]'}
+                                </button>
+                            </div>
+                        </div>
                     </FadeIn>
                 </div>
             )}

@@ -19,6 +19,7 @@ export interface ProjectDef {
     name: string;
     createdAt: string;
     updatedAt: string;
+    status?: "active" | "deleted";
 }
 
 export class StorageManager {
@@ -81,7 +82,8 @@ export class StorageManager {
             id: projectId,
             name: projectName,
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
+            status: "active"
         };
 
         const currentProjects = await this.getUserProjects(userId);
@@ -122,6 +124,34 @@ export class StorageManager {
         const projIndex = currentProjects.findIndex(p => p.id === projectId);
         if (projIndex === -1) return;
 
+        currentProjects[projIndex].updatedAt = new Date().toISOString();
+        const updatedContent = JSON.stringify(currentProjects, null, 2);
+
+        if (STORAGE_MODE === 'CLOUD') {
+            if (!userId) throw new Error("userId is required for CLOUD storage mode");
+            const key = `users/${userId}/projects.json`;
+            const command = new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: key,
+                Body: updatedContent,
+                ContentType: 'application/json'
+            });
+            await s3Client.send(command);
+        } else {
+            const p = path.join(process.cwd(), 'projects.json');
+            await fs.promises.writeFile(p, updatedContent, 'utf8');
+        }
+    }
+
+    /**
+     * Soft deletes a project by toggling its status flag to 'deleted'
+     */
+    static async archiveProject(projectId: string, userId?: string): Promise<void> {
+        const currentProjects = await this.getUserProjects(userId);
+        const projIndex = currentProjects.findIndex(p => p.id === projectId);
+        if (projIndex === -1) throw new Error("Project not found");
+
+        currentProjects[projIndex].status = "deleted";
         currentProjects[projIndex].updatedAt = new Date().toISOString();
         const updatedContent = JSON.stringify(currentProjects, null, 2);
 
