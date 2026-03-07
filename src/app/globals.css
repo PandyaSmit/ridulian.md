@@ -1,13 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap');
 
 :root {
-  --background: #050505;
-  --foreground: #f4f4f5;
-  --accent: #3b82f6;
-  --accent-glow: rgba(59, 130, 246, 0.4);
-  --border: #27272a;
-  --card-bg: rgba(24, 24, 27, 0.5);
-  --text-muted: #a1a1aa;
+  --background: #161412;
+  /* Obsidian */
+  --foreground: #E8DCC2;
+  /* Parchment */
+  --accent: #B69B74;
+  /* Tarnished Gold */
+  --accent-glow: rgba(182, 155, 116, 0.4);
+  --interactive: #4B90E2;
+  /* Spice Blue */
+  --danger: #8B3A3A;
+  /* Rust */
+  --border: rgba(182, 155, 116, 0.3);
+  /* Soft Gold border */
+  --card-bg: rgba(22, 20, 18, 0.8);
+  --text-muted: #B3A895;
+  /* Faded Parchment */
+
+  --font-serif: 'Cinzel', serif;
+  --font-mono: 'IBM Plex Mono', monospace;
 }
 
 html,
@@ -17,11 +29,25 @@ body {
   overflow-x: hidden;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-mono);
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle CSS Static Noise for Stone/Vellum effect */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
 * {
@@ -45,8 +71,10 @@ h4,
 h5,
 h6 {
   margin: 0;
+  font-family: var(--font-serif);
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.05em;
+  color: var(--accent);
 }
 
 p {
@@ -75,13 +103,12 @@ p {
 }
 
 .nav-brand {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  font-family: var(--font-serif);
   font-weight: 700;
-  letter-spacing: -0.02em;
-  background: linear-gradient(to right, #ffffff, #a1a1aa);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  text-transform: lowercase;
 }
 
 .nav-links {
@@ -114,10 +141,9 @@ p {
 .hero-title {
   font-size: max(3rem, 5vw);
   line-height: 1.1;
-  background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-family: var(--font-serif);
+  color: var(--accent);
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .hero-subtitle {
@@ -135,19 +161,92 @@ p {
   align-items: center;
   justify-content: center;
   padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #ffffff;
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--background);
   background-color: var(--accent);
-  border-radius: 9999px;
-  box-shadow: 0 0 20px var(--accent-glow);
-  transition: all 0.2s ease;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 30px var(--accent-glow);
-  color: #ffffff;
+  box-shadow: 0 0 20px var(--accent-glow);
+  background-color: transparent;
+  color: var(--accent);
+}
+
+/* Auth Styles */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.auth-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.auth-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.auth-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  filter: sepia(0.6) hue-rotate(330deg) contrast(1.1);
+  border: 2px solid var(--accent);
+  transition: all 0.3s ease;
+}
+
+.auth-avatar:hover {
+  filter: sepia(0) contrast(1);
+  border-color: var(--interactive);
+  box-shadow: 0 0 15px rgba(75, 144, 226, 0.4);
+}
+
+.btn-auth {
+  font-family: var(--font-serif);
+  background: rgba(22, 20, 18, 0.9);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: all 0.4s ease;
+  border-radius: 2px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+}
+
+.btn-login:hover {
+  border-color: var(--interactive);
+  color: var(--interactive);
+  box-shadow: inset 0 0 15px rgba(75, 144, 226, 0.1), 0 0 10px rgba(75, 144, 226, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-logout {
+  color: var(--danger);
+  border-color: rgba(139, 58, 58, 0.4);
+}
+
+.btn-logout:hover {
+  background: rgba(139, 58, 58, 0.1);
+  border-color: var(--danger);
+  box-shadow: inset 0 0 15px rgba(139, 58, 58, 0.2);
 }
 
 /* Lore Article Styles */
@@ -313,4 +412,53 @@ p {
 
 .timeline-content {
   color: var(--text-muted);
+}
+
+/* ========================================= */
+/* PROJECT DASHBOARD & TERMINAL NODES        */
+/* ========================================= */
+
+.project-grid {
+  width: 100%;
+}
+
+.project-card {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Remove neon effects from dashboard cards, apply stone tablet look */
+.create-new-card {
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  background: rgba(182, 155, 116, 0.02) !important;
+  border: 1px dashed var(--accent) !important;
+}
+
+.create-new-card:hover {
+  background: rgba(182, 155, 116, 0.05) !important;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6), 0 0 15px rgba(182, 155, 116, 0.1);
+  transform: translateY(-2px);
+  border-color: var(--accent) !important;
+}
+
+.existing-card {
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5), 0 4px 6px rgba(0, 0, 0, 0.4);
+  background: rgba(22, 20, 18, 0.9) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.existing-card:hover {
+  border-color: var(--interactive) !important;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6), 0 0 20px rgba(75, 144, 226, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Remove scanlines completely */
+.card-scanline-overlay {
+  display: none;
+}
+
+.existing-card>* {
+  position: relative;
+  z-index: 2;
 }

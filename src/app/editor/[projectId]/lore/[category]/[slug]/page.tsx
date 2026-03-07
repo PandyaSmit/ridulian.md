@@ -3,32 +3,44 @@ import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import Timeline from '@/components/Timeline';
 import Link from 'next/link';
+import TopNav from '@/components/TopNav';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { FadeIn } from '@/components/MotionWrapper';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { STORAGE_MODE, StorageManager } from '@/lib/StorageManager';
+
+type PageProps = { params: Promise<{ projectId: string; category: string; slug: string }> };
 
 export async function generateStaticParams() {
-    const categories = getAllCategories();
-    const paths: { category: string; slug: string }[] = [];
+    if (STORAGE_MODE === 'CLOUD') {
+        return [];
+    }
 
-    categories.forEach(category => {
-        const entries = getAllEntries(category);
-        entries.forEach(entry => {
-            paths.push({
-                category,
-                slug: entry.slug,
-            });
-        });
-    });
+    const projects = await StorageManager.getUserProjects();
+    const paths: { projectId: string; category: string; slug: string }[] = [];
+
+    for (const proj of projects) {
+        const categories = await getAllCategories(proj.id);
+        for (const category of categories) {
+            const entries = await getAllEntries(category, proj.id);
+            for (const entry of entries) {
+                paths.push({ projectId: proj.id, category, slug: entry.slug });
+            }
+        }
+    }
 
     return paths;
 }
 
 export async function generateMetadata(
-    { params }: { params: Promise<{ category: string; slug: string }> },
+    { params }: PageProps,
     parent: ResolvingMetadata
 ): Promise<Metadata> {
-    const { category, slug } = await params;
-    const entry = getEntryBySlug(category, slug);
+    const { projectId, category, slug } = await params;
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    const entry = await getEntryBySlug(category, slug, projectId, userId);
 
     if (!entry) {
         return {
@@ -43,9 +55,12 @@ export async function generateMetadata(
     };
 }
 
-export default async function LorePage({ params }: { params: Promise<{ category: string; slug: string }> }) {
-    const { category, slug } = await params;
-    const entry = getEntryBySlug(category, slug);
+export default async function LorePage({ params }: PageProps) {
+    const { projectId, category, slug } = await params;
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
+    const entry = await getEntryBySlug(category, slug, projectId, userId);
 
     if (!entry) {
         notFound();
@@ -55,12 +70,7 @@ export default async function LorePage({ params }: { params: Promise<{ category:
 
     return (
         <div className="app-container">
-            <nav className="top-nav">
-                <Link href="/" className="nav-brand">ridulian.md</Link>
-                <div className="nav-links">
-                    <Link href="/graph">Universe Graph</Link>
-                </div>
-            </nav>
+            <TopNav />
 
             <main className="main-content lore-article">
                 <FadeIn className="article-header">
@@ -81,7 +91,9 @@ export default async function LorePage({ params }: { params: Promise<{ category:
                             a: (props: any) => {
                                 const href = props.href;
                                 if (href?.startsWith('/')) {
-                                    return <Link href={href} {...props} />;
+                                    // Scope relative markdown links to current project
+                                    const scopedHref = `/editor/${projectId}/lore${href}`;
+                                    return <Link href={scopedHref} {...props} />;
                                 }
                                 return <a target="_blank" rel="noopener noreferrer" {...props} />;
                             }

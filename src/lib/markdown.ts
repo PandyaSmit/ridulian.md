@@ -1,8 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import matter from 'gray-matter';
-
-const contentDirectory = path.join(process.cwd(), 'content');
+import { StorageManager } from './StorageManager';
 
 export interface Relationship {
     target: string; // e.g., 'factions/the-empire'
@@ -24,51 +21,45 @@ export interface Entry {
     content: string;
 }
 
-export function getAllCategories(): string[] {
-    if (!fs.existsSync(contentDirectory)) return [];
-    return fs.readdirSync(contentDirectory).filter(file => {
-        return fs.statSync(path.join(contentDirectory, file)).isDirectory();
+export async function getAllCategories(projectId: string, userId?: string): Promise<string[]> {
+    return await StorageManager.getCategories(projectId, userId);
+}
+
+export async function getAllEntries(category: string, projectId: string, userId?: string): Promise<EntryData[]> {
+    const filenames = await StorageManager.getEntriesByCategory(category, projectId, userId);
+
+    // We fetch each document's content to parse frontmatter quickly
+    // Note: In a production heavily-distributed cloud environment, this could heavily impact S3 limits.
+    // For large scale, you'd index these instead.
+    const entryPromises = filenames.map(async (filename) => {
+        const slug = filename.replace(/\.mdx?$/, '');
+        const extension = filename.endsWith('.mdx') ? 'mdx' : 'md';
+        const fileContents = await StorageManager.getLoreDocument(category, slug, projectId, userId, extension);
+
+        if (!fileContents) return null;
+
+        const { data } = matter(fileContents);
+        return {
+            slug,
+            category,
+            title: data.title || slug,
+            ...data,
+        } as EntryData;
     });
+
+    const results = await Promise.all(entryPromises);
+    return results.filter(Boolean) as EntryData[];
 }
 
-export function getAllEntries(category: string): EntryData[] {
-    const categoryPath = path.join(contentDirectory, category);
-    if (!fs.existsSync(categoryPath)) return [];
-
-    const filenames = fs.readdirSync(categoryPath);
-
-    return filenames
-        .filter(filename => filename.endsWith('.md') || filename.endsWith('.mdx'))
-        .map(filename => {
-            const slug = filename.replace(/\.mdx?$/, '');
-            const fullPath = path.join(categoryPath, filename);
-            const fileContents = fs.readFileSync(fullPath, 'utf8');
-            const { data } = matter(fileContents);
-
-            return {
-                slug,
-                category,
-                title: data.title || slug,
-                ...data,
-            } as EntryData;
-        });
-}
-
-export function getEntryBySlug(category: string, slug: string): Entry | null {
+export async function getEntryBySlug(category: string, slug: string, projectId: string, userId?: string): Promise<Entry | null> {
     try {
-        const fullPathMDX = path.join(contentDirectory, category, `${slug}.mdx`);
-        const fullPathMD = path.join(contentDirectory, category, `${slug}.md`);
-
-        let fullPath = null;
-        if (fs.existsSync(fullPathMDX)) {
-            fullPath = fullPathMDX;
-        } else if (fs.existsSync(fullPathMD)) {
-            fullPath = fullPathMD;
-        } else {
-            return null;
+        let fileContents = await StorageManager.getLoreDocument(category, slug, projectId, userId, 'mdx');
+        if (!fileContents) {
+            fileContents = await StorageManager.getLoreDocument(category, slug, projectId, userId, 'md');
         }
 
-        const fileContents = fs.readFileSync(fullPath, 'utf8');
+        if (!fileContents) return null;
+
         const { data, content } = matter(fileContents);
 
         return {
@@ -81,17 +72,19 @@ export function getEntryBySlug(category: string, slug: string): Entry | null {
             content,
         };
     } catch (e) {
+        console.error(`Failed to parse markdown for slug ${slug}:`, e);
         return null;
     }
 }
 
-export function getGraphData() {
-    const categories = getAllCategories();
+export async function getGraphData(projectId: string, userId?: string) {
+    const categories = await getAllCategories(projectId, userId);
     const nodes: any[] = [];
     const links: any[] = [];
 
-    categories.forEach(category => {
-        const entries = getAllEntries(category);
+    // Parallelize categorical fetches
+    const categoryPromises = categories.map(async (category) => {
+        const entries = await getAllEntries(category, projectId, userId);
         entries.forEach(entry => {
             nodes.push({
                 id: `${category}/${entry.slug}`,
@@ -112,6 +105,8 @@ export function getGraphData() {
             }
         });
     });
+
+    await Promise.all(categoryPromises);
 
     return { nodes, links };
 }

@@ -1,15 +1,11 @@
-import Link from 'next/link';
 import { StaggerContainer, StaggerItem, FadeIn } from '@/components/MotionWrapper';
+import TopNav from '@/components/TopNav';
+import HeroButton from '@/components/HeroButton';
 
 export default function Home() {
   return (
     <div className="app-container">
-      <nav className="top-nav">
-        <Link href="/" className="nav-brand">ridulian.md</Link>
-        <div className="nav-links">
-          <Link href="/graph">Universe Graph</Link>
-        </div>
-      </nav>
+      <TopNav />
       <main className="main-content">
         <StaggerContainer className="hero-section">
           <StaggerItem>
@@ -20,11 +16,9 @@ export default function Home() {
               A specialized engine for managing massive fictional universes, timelines, and character relationship webs using simple Markdown files.
             </p>
           </StaggerItem>
-          <StaggerItem>
-            <div className="hero-actions">
-              <a href="/graph" className="btn-primary">Explore the Graph</a>
-            </div>
-          </StaggerItem>
+          <div className="hero-actions">
+            <HeroButton />
+          </div>
         </StaggerContainer>
       </main>
     </div>
