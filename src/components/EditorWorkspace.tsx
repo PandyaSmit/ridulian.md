@@ -9,6 +9,7 @@ import { serialize } from 'next-mdx-remote/serialize';
 import Timeline from './Timeline';
 import Link from 'next/link';
 import { Folder, File, Plus, Edit2, Trash2, ChevronRight, ChevronDown } from 'lucide-react';
+import Spinner from './Spinner';
 
 export interface VFSNode {
     id: string;
@@ -156,7 +157,10 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+    const [isFetchingTree, setIsFetchingTree] = useState(false);
+
     const fetchTree = useCallback(async () => {
+        setIsFetchingTree(true);
         try {
             const res = await fetch(`/api/projects/${projectId}/tree`);
             if (res.ok) {
@@ -165,6 +169,8 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
             }
         } catch (e) {
             console.error(e);
+        } finally {
+            setIsFetchingTree(false);
         }
     }, [projectId]);
 
@@ -323,7 +329,10 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
             {/* Sidebar */}
             <aside style={{ width: '280px', borderRight: '1px solid var(--border)', background: 'var(--background)', overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                    <h3 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>The Archives</h3>
+                    <h3 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        The Archives
+                        {isFetchingTree && <Spinner size={12} />}
+                    </h3>
                     <button
                         onClick={() => handleAction('create', null)}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem' }}
@@ -353,15 +362,15 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                                 <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                                     <span style={{ color: 'var(--accent)' }}>/</span>{activeNode.storageKey}.mdx
                                 </span>
-                                {isLoadingNode && <span style={{ fontSize: '0.75rem', color: 'var(--accent)', animation: 'pulse 1.5s infinite' }}>Loading...</span>}
+                                {isLoadingNode && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Spinner size={14} /><span style={{ fontSize: '0.75rem', color: 'var(--accent)' }}>Loading...</span></div>}
                             </div>
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving || isLoadingNode}
                                 className="btn-auth"
-                                style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', color: 'var(--interactive)', borderColor: 'var(--interactive)' }}
+                                style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', color: 'var(--interactive)', borderColor: 'var(--interactive)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                             >
-                                {isSaving ? '[ SCRIBING... ]' : '[ SCRIBE LORE ]'}
+                                {isSaving ? <><Spinner size={14} /> [ SCRIBING... ]</> : '[ SCRIBE LORE ]'}
                             </button>
                         </div>
 
@@ -410,8 +419,8 @@ export default function EditorWorkspace({ projectId }: { projectId: string }) {
                                         }}
                                     />
                                 ) : (
-                                    <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.9rem' }}>
-                                        Awaiting input...
+                                    <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {isCompiling ? <><Spinner size={16} /> Compiling Layout...</> : 'Awaiting input...'}
                                     </div>
                                 )}
                             </div>

@@ -3,11 +3,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useParams } from 'next/navigation';
+import Spinner from './Spinner';
 
 // Dynamically import ForceGraph2D to prevent SSR window is not defined errors
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
     ssr: false,
-    loading: () => <div className="graph-loading" style={{ color: 'var(--accent)', padding: '2rem' }}>Initializing Neural Link...</div>
+    loading: () => <div className="graph-loading" style={{ color: 'var(--accent)', padding: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Spinner size={18} /> Initializing Neural Link...</div>
 });
 
 interface GraphData {
