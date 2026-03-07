@@ -22,6 +22,15 @@ export interface ProjectDef {
     status?: "active" | "deleted";
 }
 
+export interface VFSNode {
+    id: string;
+    type: 'folder' | 'file';
+    name: string;
+    parentId: string | null;
+    storageKey: string;
+    status: 'active' | 'deleted';
+}
+
 export class StorageManager {
     /**
      * Helper to convert an S3 Stream to a string
@@ -172,6 +181,234 @@ export class StorageManager {
     }
 
     // ==========================================
+    // VFS MANAGER (Virtual File System)
+    // ==========================================
+
+    static async getProjectTree(projectId: string, userId?: string): Promise<VFSNode[]> {
+        if (STORAGE_MODE === 'CLOUD') {
+            if (!userId) throw new Error("userId is required for CLOUD storage mode");
+            const key = `users/${userId}/projects/${projectId}/project-index.json`;
+            const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+
+            try {
+                const response = await s3Client.send(command);
+                if (response.Body) {
+                    const content = await this.streamToString(response.Body);
+                    return JSON.parse(content) as VFSNode[];
+                }
+            } catch (error: any) {
+                if (error.name !== 'NoSuchKey') {
+                    console.error("Error fetching VFS from S3:", error);
+                }
+            }
+            return [];
+        } else {
+            // Local FS Implementation
+            const nodes: VFSNode[] = [];
+            const projectRoot = path.join(contentDirectory, projectId);
+
+            if (!fs.existsSync(projectRoot)) {
+                return [];
+            }
+
+            const walkSync = (currentDirPath: string, parentId: string | null) => {
+                const items = fs.readdirSync(currentDirPath);
+
+                for (const item of items) {
+                    const fullPath = path.join(currentDirPath, item);
+                    const stat = fs.statSync(fullPath);
+                    const isDirectory = stat.isDirectory();
+
+                    if (!isDirectory && !item.endsWith('.md') && !item.endsWith('.mdx')) {
+                        continue;
+                    }
+
+                    let storageKey = path.relative(projectRoot, fullPath).replace(/\\/g, '/');
+                    if (!isDirectory) {
+                        storageKey = storageKey.replace(/\.mdx?$/, '');
+                    }
+
+                    // Deterministic ID based on relative path
+                    const id = crypto.createHash('sha256').update(storageKey).digest('hex').substring(0, 16);
+
+                    const name = isDirectory ? item : item.replace(/\.mdx?$/, '');
+
+                    nodes.push({
+                        id,
+                        type: isDirectory ? 'folder' : 'file',
+                        name,
+                        parentId,
+                        storageKey,
+                        status: 'active'
+                    });
+
+                    if (isDirectory) {
+                        walkSync(fullPath, id);
+                    }
+                }
+            };
+
+            walkSync(projectRoot, null);
+            return nodes;
+        }
+    }
+
+    static async createNode(projectId: string, userId: string | undefined, name: string, type: 'folder' | 'file', parentId: string | null): Promise<VFSNode> {
+        const tree = await this.getProjectTree(projectId, userId);
+
+        let parentPath = '';
+        if (parentId) {
+            const parentNode = tree.find(n => n.id === parentId);
+            if (parentNode) {
+                parentPath = parentNode.storageKey;
+            }
+        }
+
+        const storageKey = parentPath ? `${parentPath}/${name}` : name;
+        const id = crypto.createHash('sha256').update(storageKey).digest('hex').substring(0, 16);
+
+        const newNode: VFSNode = {
+            id,
+            type,
+            name,
+            parentId,
+            storageKey,
+            status: 'active'
+        };
+
+        if (STORAGE_MODE === 'CLOUD') {
+            if (!userId) throw new Error("userId is required for CLOUD storage mode");
+            tree.push(newNode);
+
+            const key = `users/${userId}/projects/${projectId}/project-index.json`;
+            const command = new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: key,
+                Body: JSON.stringify(tree, null, 2),
+                ContentType: 'application/json'
+            });
+            await s3Client.send(command);
+        } else {
+            const fullPath = path.join(contentDirectory, projectId, storageKey);
+            if (type === 'folder') {
+                await fs.promises.mkdir(fullPath, { recursive: true });
+            } else {
+                const filePath = `${fullPath}.mdx`;
+                // Ensure parent directory exists in case it was missed
+                await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+                await fs.promises.writeFile(filePath, `---\ntitle: ${name}\ndescription: \n---\n`, 'utf8');
+            }
+        }
+
+        return newNode;
+    }
+
+    static async renameNode(projectId: string, userId: string | undefined, nodeId: string, newName: string): Promise<VFSNode> {
+        const tree = await this.getProjectTree(projectId, userId);
+        const nodeIndex = tree.findIndex(n => n.id === nodeId);
+        if (nodeIndex === -1) throw new Error("Node not found");
+
+        const node = tree[nodeIndex];
+        const oldStorageKey = node.storageKey;
+
+        const parts = oldStorageKey.split('/');
+        parts[parts.length - 1] = newName;
+        const newStorageKey = parts.join('/');
+
+        node.name = newName;
+        node.storageKey = newStorageKey;
+
+        if (STORAGE_MODE === 'CLOUD') {
+            if (!userId) throw new Error("userId is required for CLOUD storage mode");
+
+            const cascadeRename = (parentId: string, currentPath: string) => {
+                const children = tree.filter(n => n.parentId === parentId);
+                for (const child of children) {
+                    child.storageKey = `${currentPath}/${child.name}`;
+                    cascadeRename(child.id, child.storageKey);
+                }
+            };
+            cascadeRename(node.id, node.storageKey);
+
+            const key = `users/${userId}/projects/${projectId}/project-index.json`;
+            const command = new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: key,
+                Body: JSON.stringify(tree, null, 2),
+                ContentType: 'application/json'
+            });
+            await s3Client.send(command);
+        } else {
+            const oldPath = node.type === 'folder'
+                ? path.join(contentDirectory, projectId, oldStorageKey)
+                : path.join(contentDirectory, projectId, `${oldStorageKey}.mdx`); // Fallback logic usually favors .mdx here
+
+            let actualOldPath = oldPath;
+            if (node.type === 'file' && !fs.existsSync(oldPath)) {
+                actualOldPath = path.join(contentDirectory, projectId, `${oldStorageKey}.md`);
+            }
+
+            const newPath = node.type === 'folder'
+                ? path.join(contentDirectory, projectId, newStorageKey)
+                : path.join(contentDirectory, projectId, `${newStorageKey}.mdx`);
+
+            if (fs.existsSync(actualOldPath)) {
+                await fs.promises.rename(actualOldPath, newPath);
+            } else {
+                console.warn(`Attempted to rename non-existent file: ${actualOldPath}`);
+            }
+        }
+
+        return node;
+    }
+
+    static async deleteNode(projectId: string, userId: string | undefined, nodeId: string): Promise<void> {
+        const tree = await this.getProjectTree(projectId, userId);
+        const nodeIndex = tree.findIndex(n => n.id === nodeId);
+        if (nodeIndex === -1) throw new Error("Node not found");
+
+        const node = tree[nodeIndex];
+
+        if (STORAGE_MODE === 'CLOUD') {
+            if (!userId) throw new Error("userId is required for CLOUD storage mode");
+
+            const cascadeDelete = (targetId: string) => {
+                const target = tree.find(n => n.id === targetId);
+                if (target) target.status = 'deleted';
+
+                const children = tree.filter(n => n.parentId === targetId);
+                for (const child of children) {
+                    cascadeDelete(child.id);
+                }
+            };
+
+            cascadeDelete(nodeId);
+
+            const key = `users/${userId}/projects/${projectId}/project-index.json`;
+            const command = new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: key,
+                Body: JSON.stringify(tree, null, 2),
+                ContentType: 'application/json'
+            });
+            await s3Client.send(command);
+        } else {
+            const targetPath = node.type === 'folder'
+                ? path.join(contentDirectory, projectId, node.storageKey)
+                : path.join(contentDirectory, projectId, `${node.storageKey}.md`);
+
+            const targetPathMdx = path.join(contentDirectory, projectId, `${node.storageKey}.mdx`);
+
+            if (node.type === 'folder') {
+                if (fs.existsSync(targetPath)) await fs.promises.rm(targetPath, { recursive: true, force: true });
+            } else {
+                if (fs.existsSync(targetPath)) await fs.promises.rm(targetPath);
+                if (fs.existsSync(targetPathMdx)) await fs.promises.rm(targetPathMdx);
+            }
+        }
+    }
+
+    // ==========================================
     // DOCUMENT MANAGER
     // ==========================================
 
@@ -279,6 +516,75 @@ export class StorageManager {
                 console.error(`Error reading local document ${fullPath}:`, error);
                 return null;
             }
+        }
+    }
+
+    /**
+     * VFS-native Content Fetcher
+     */
+    static async getVfsDocument(storageKey: string, projectId: string, userId?: string): Promise<string | null> {
+        if (STORAGE_MODE === 'CLOUD') {
+            if (!userId) throw new Error("userId is required for CLOUD storage mode");
+
+            const key = `users/${userId}/projects/${projectId}/${storageKey}.mdx`;
+            const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+
+            try {
+                const response = await s3Client.send(command);
+                if (!response.Body) return null;
+                return await this.streamToString(response.Body);
+            } catch (error: any) {
+                if (error.name === 'NoSuchKey') {
+                    // Try fallback to .md
+                    const keyMd = `users/${userId}/projects/${projectId}/${storageKey}.md`;
+                    try {
+                        const fallbackResponse = await s3Client.send(new GetObjectCommand({ Bucket: BUCKET_NAME, Key: keyMd }));
+                        if (fallbackResponse.Body) return await this.streamToString(fallbackResponse.Body);
+                    } catch (e) {
+                        return null;
+                    }
+                }
+                console.error(`Error fetching document ${key} from S3:`, error);
+                return null;
+            }
+        } else {
+            const mdxPath = path.join(contentDirectory, projectId, `${storageKey}.mdx`);
+            const mdPath = path.join(contentDirectory, projectId, `${storageKey}.md`);
+
+            if (fs.existsSync(mdxPath)) return await fs.promises.readFile(mdxPath, 'utf8');
+            if (fs.existsSync(mdPath)) return await fs.promises.readFile(mdPath, 'utf8');
+
+            return null;
+        }
+    }
+
+    /**
+     * VFS-native Content Saver
+     */
+    static async saveVfsDocument(storageKey: string, content: string, projectId: string, userId?: string): Promise<void> {
+        if (STORAGE_MODE === 'CLOUD') {
+            if (!userId) throw new Error("userId is required for CLOUD storage mode");
+
+            const key = `users/${userId}/projects/${projectId}/${storageKey}.mdx`;
+            const command = new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: key,
+                Body: content,
+                ContentType: 'text/markdown'
+            });
+
+            try {
+                await s3Client.send(command);
+                await this.updateProjectTimestamp(projectId, userId);
+            } catch (error) {
+                console.error(`Error saving document ${key} to S3:`, error);
+                throw error;
+            }
+        } else {
+            const fullPath = path.join(contentDirectory, projectId, `${storageKey}.mdx`);
+            await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
+            await fs.promises.writeFile(fullPath, content, 'utf8');
+            await this.updateProjectTimestamp(projectId, userId);
         }
     }
 

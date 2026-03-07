@@ -14,19 +14,27 @@ export async function GET(req: Request) {
 
         const { searchParams } = new URL(req.url);
         const projectId = searchParams.get('projectId');
+        // Legacy fallback
         const category = searchParams.get('category');
         const docId = searchParams.get('docId');
 
-        if (!projectId || !category || !docId) {
-            return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+        // New VFS standard
+        const storageKey = searchParams.get('storageKey');
+
+        if (!projectId) {
+            return NextResponse.json({ error: 'Missing projectId' }, { status: 400 });
         }
 
-        // We assume docId already has or doesn't have an extension. getLoreDocument might expect docId without extension, 
-        // let's strip it if it has one so StorageManager can add .mdx as default, or we can just read the exact doc.
-        // StorageManager expects docId without extension because it forces `.${extension}`.
-        const cleanDocId = docId.replace(/\.(md|mdx)$/, '');
+        let content: string | null = null;
 
-        const content = await StorageManager.getLoreDocument(category, cleanDocId, projectId, userId);
+        if (storageKey) {
+            content = await StorageManager.getVfsDocument(storageKey, projectId, userId);
+        } else if (category && docId) {
+            const cleanDocId = docId.replace(/\.(md|mdx)$/, '');
+            content = await StorageManager.getLoreDocument(category, cleanDocId, projectId, userId);
+        } else {
+            return NextResponse.json({ error: 'Must provide storageKey or category/docId' }, { status: 400 });
+        }
 
         if (!content) {
             return NextResponse.json({ error: 'Document not found' }, { status: 404 });
@@ -49,15 +57,20 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { projectId, category, docId, content } = body;
+        const { projectId, storageKey, category, docId, content } = body;
 
-        if (!projectId || !category || !docId || typeof content !== 'string') {
-            return NextResponse.json({ error: 'Missing required parameters or malformed body' }, { status: 400 });
+        if (!projectId || typeof content !== 'string') {
+            return NextResponse.json({ error: 'Missing projectId or content' }, { status: 400 });
         }
 
-        const cleanDocId = docId.replace(/\.(md|mdx)$/, '');
-
-        await StorageManager.saveLoreDocument(category, cleanDocId, content, projectId, userId);
+        if (storageKey) {
+            await StorageManager.saveVfsDocument(storageKey, content, projectId, userId);
+        } else if (category && docId) {
+            const cleanDocId = docId.replace(/\.(md|mdx)$/, '');
+            await StorageManager.saveLoreDocument(category, cleanDocId, content, projectId, userId);
+        } else {
+            return NextResponse.json({ error: 'Must provide storageKey or category/docId' }, { status: 400 });
+        }
 
         return NextResponse.json({ success: true });
     } catch (error: any) {

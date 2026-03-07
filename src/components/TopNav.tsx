@@ -22,14 +22,10 @@ export default function TopNav() {
             </Link>
 
             <div className="nav-actions">
-                {projectId ? (
+                {projectId && (
                     <Link href={`/editor/${projectId}/graph`} className="nav-link">
                         Universe Graph
                     </Link>
-                ) : (
-                    <span className="nav-link" style={{ color: 'var(--text-muted)', cursor: 'not-allowed' }}>
-                        Universe Graph
-                    </span>
                 )}
 
                 {session ? (

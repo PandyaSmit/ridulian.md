@@ -91,8 +91,9 @@ export default async function LorePage({ params }: PageProps) {
                             a: (props: any) => {
                                 const href = props.href;
                                 if (href?.startsWith('/')) {
-                                    // Make links root-relative via existing or wrap with projectId later
-                                    return <Link href={href} {...props} />;
+                                    // Scope relative markdown links to current project
+                                    const scopedHref = `/editor/${projectId}/lore${href}`;
+                                    return <Link href={scopedHref} {...props} />;
                                 }
                                 return <a target="_blank" rel="noopener noreferrer" {...props} />;
                             }
